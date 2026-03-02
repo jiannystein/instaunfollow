@@ -19,7 +19,7 @@ Everything runs in **your browser**. No server, no database, no data ever leaves
 
 ## How To Use
 
-1. Open the [InstaUnfollow page](https://instaunfollow.github.io/) and **drag the bookmarklet** to your bookmarks bar
+1. Open the [InstaUnfollow page](https://jiannystein.github.io/instaunfollow/) and **drag the bookmarklet** to your bookmarks bar
 2. Head to [instagram.com](https://www.instagram.com/) and make sure you're logged in
 3. Click the **"InstaUnfollow"** bookmark — a panel slides in on the right
 4. Hit **"Start Scan"** and let it fetch your lists
