@@ -78,6 +78,14 @@ Yes, the whole thing is **one HTML file**. The bookmarklet JavaScript is embedde
 
 The original version of this tool used Node.js + Playwright to automate a real Chrome browser — navigate to profiles, scroll through modals, click buttons. It worked but required a local dev setup. It's preserved in `CLI+Playwright version/` if you're into that sort of thing.
 
+## License
+
+MIT — do whatever you want with it. Fork it, learn from it, build on it.
+
+Just keep the credit where it's due. That's all.
+
+If you found this useful and end up building something inspired by it, a mention or a link back would be genuinely appreciated. Not required, just good vibes. Open source works best when people look out for each other.
+
 ## Disclaimer
 
 Use at your own risk. This is an unofficial tool, not affiliated with Instagram or Meta. Aggressive unfollowing could result in temporary action blocks. The built-in rate limiting is designed to keep you safe, but nothing is guaranteed. Be smart about it.
