@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InstaUnfollow - Find Who Doesn't Follow You Back</title>
+  <style>
+    :root {
+      --ig-primary: #0095F6;
+      --ig-primary-hover: #1877F2;
+      --ig-red: #ED4956;
+      --ig-green: #58C322;
+      --ig-bg: #FAFAFA;
+      --ig-white: #FFFFFF;
+      --ig-text: #262626;
+      --ig-text-secondary: #8E8E8E;
+      --ig-border: #DBDBDB;
+      --ig-gradient: linear-gradient(45deg, #833AB4, #FD1D1D, #F77737);
+      --ig-card-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      --ig-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      --ig-radius: 12px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: var(--ig-font); background: var(--ig-bg); color: var(--ig-text); min-height: 100vh; }
+
+    .header { background: var(--ig-white); border-bottom: 1px solid var(--ig-border); padding: 16px 0; position: sticky; top: 0; z-index: 100; }
+    .header-inner { max-width: 935px; margin: 0 auto; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; }
+    .logo { font-size: 22px; font-weight: 700; background: var(--ig-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .header-links a { color: var(--ig-text-secondary); text-decoration: none; font-size: 13px; margin-left: 20px; }
+    .header-links a:hover { color: var(--ig-text); }
+
+    .container { max-width: 935px; margin: 0 auto; padding: 24px 20px; }
+
+    .privacy-banner { background: #E8F5E9; border: 1px solid #A5D6A7; border-radius: var(--ig-radius); padding: 14px 20px; margin-bottom: 24px; display: flex; align-items: flex-start; gap: 10px; font-size: 13px; line-height: 1.5; color: #2E7D32; }
+    .privacy-banner .icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+
+    .step-card { background: var(--ig-white); border: 1px solid var(--ig-border); border-radius: var(--ig-radius); padding: 24px; margin-bottom: 16px; box-shadow: var(--ig-card-shadow); }
+    .step-card.active { border-color: var(--ig-primary); }
+    .step-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .step-number { width: 32px; height: 32px; border-radius: 50%; background: var(--ig-primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; flex-shrink: 0; }
+    .step-title { font-size: 16px; font-weight: 600; }
+    .step-desc { font-size: 14px; color: var(--ig-text-secondary); line-height: 1.5; margin-bottom: 16px; }
+
+    .bookmarklet-btn { display: inline-block; background: var(--ig-gradient); color: white; padding: 12px 28px; border-radius: 8px; font-size: 15px; font-weight: 600; text-decoration: none; cursor: grab; user-select: none; transition: transform 0.15s, box-shadow 0.15s; }
+    .bookmarklet-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(131,58,180,0.3); }
+    .bookmarklet-btn:active { cursor: grabbing; }
+
+    .preview-img { margin-top: 16px; border: 1px solid var(--ig-border); border-radius: 8px; overflow: hidden; background: #1a1a2e; padding: 20px; color: #aaa; font-size: 13px; line-height: 1.6; }
+
+    .how-it-works { background: var(--ig-white); border: 1px solid var(--ig-border); border-radius: var(--ig-radius); padding: 24px; margin-bottom: 16px; }
+    .how-it-works h3 { font-size: 15px; margin-bottom: 12px; }
+    .how-it-works p { font-size: 13px; color: var(--ig-text-secondary); line-height: 1.6; margin-bottom: 8px; }
+    .diagram { background: #F5F5F5; border-radius: 8px; padding: 16px; font-family: monospace; font-size: 12px; line-height: 1.5; white-space: pre; overflow-x: auto; margin: 12px 0; color: #555; }
+
+    .footer { text-align: center; padding: 32px 20px; font-size: 12px; color: var(--ig-text-secondary); }
+    .footer a { color: var(--ig-text-secondary); }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">InstaUnfollow</div>
+      <div class="header-links">
+        <a href="#how-it-works">How it works</a>
+        <a href="https://github.com/user/instaunfollow" target="_blank">Source Code</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <div class="privacy-banner">
+      <span class="icon">&#x1f512;</span>
+      <div>
+        <strong>100% private &amp; client-side.</strong> This tool runs entirely in your browser.
+        No server, no database, no data collection. Your Instagram credentials and data never leave your machine.
+        <strong>Verify:</strong> open DevTools (F12) &rarr; Network tab &mdash; only requests go to instagram.com.
+      </div>
+    </div>
+
+    <!-- Step 1 -->
+    <div class="step-card active">
+      <div class="step-header">
+        <div class="step-number">1</div>
+        <div class="step-title">Save the Bookmarklet</div>
+      </div>
+      <div class="step-desc">
+        Drag the button below to your <strong>bookmarks bar</strong>. This is a one-time setup.
+        <br><span style="font-size: 12px; color: #999;">(If you don't see the bookmarks bar, press Ctrl+Shift+B / Cmd+Shift+B to show it)</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+        <a class="bookmarklet-btn" id="bookmarkletLink" href="#">&#x1f50d; InstaUnfollow</a>
+        <span style="font-size: 13px; color: var(--ig-text-secondary);">&larr; Drag this to your bookmarks bar</span>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="step-card active">
+      <div class="step-header">
+        <div class="step-number">2</div>
+        <div class="step-title">Go to Instagram</div>
+      </div>
+      <div class="step-desc">
+        Open <a href="https://www.instagram.com/" target="_blank" style="color: var(--ig-primary); font-weight: 600;">instagram.com</a>
+        in any tab and make sure you're <strong>logged in</strong>.
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="step-card active">
+      <div class="step-header">
+        <div class="step-number">3</div>
+        <div class="step-title">Click the Bookmarklet</div>
+      </div>
+      <div class="step-desc">
+        While on instagram.com, click the <strong>"InstaUnfollow"</strong> bookmark you saved.
+        A control panel will appear on the right side of the page with everything you need:
+        scan, results, selection, and unfollow.
+      </div>
+      <div class="preview-img">
+        Panel preview:<br>
+        &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;<br>
+        &#9474; InstaUnfollow    [&#10005;] &#9474;<br>
+        &#9474; Connected: @you       &#9474;<br>
+        &#9474; [Start Scan]          &#9474;<br>
+        &#9474; Following: 380        &#9474;<br>
+        &#9474; Followers: 420        &#9474;<br>
+        &#9474; Not following back: 72 &#9474;<br>
+        &#9474; &#9744; @user1              &#9474;<br>
+        &#9474; &#9744; @user2              &#9474;<br>
+        &#9474; [Unfollow Selected]   &#9474;<br>
+        &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;
+      </div>
+    </div>
+
+    <!-- How It Works -->
+    <div class="how-it-works" id="how-it-works">
+      <h3>How does this work?</h3>
+      <p>
+        The bookmarklet runs <strong>directly inside instagram.com</strong> where it has permission
+        to access Instagram's API using your existing login session &mdash; exactly like you browsing normally.
+        It creates a floating control panel on the page.
+      </p>
+      <div class="diagram">When you click the bookmarklet on instagram.com:
+
+1. It reads your login session (from cookies)
+2. Calls Instagram's API to fetch your following list
+3. Calls Instagram's API to fetch your followers list
+4. Compares the two lists to find non-followers
+5. Shows results in a panel &mdash; you select who to unfollow
+6. Unfollows with randomized delays to protect your account
+
+Everything runs in YOUR browser. No external servers involved.</div>
+      <p>
+        <strong>Why a bookmarklet?</strong> Instagram blocks cross-origin requests (CORS) and
+        cross-tab communication (COOP). A bookmarklet runs <em>inside</em> instagram.com,
+        bypassing these restrictions without any server or extension needed.
+      </p>
+      <p>
+        <strong>Rate limiting:</strong> The tool waits 3-8 seconds between unfollows, pauses for
+        2-5 minutes every ~30 actions, and has a hard stop at 150 unfollows per session.
+      </p>
+      <p>
+        <strong>Want to verify?</strong> Right-click the bookmarklet &rarr; Edit &rarr; you can read
+        every line of code. Or view the <a href="https://github.com/user/instaunfollow" target="_blank">source on GitHub</a>.
+      </p>
+    </div>
+
+  </div>
+
+  <footer class="footer">
+    InstaUnfollow &mdash; Open source, client-side only.
+    <a href="https://github.com/user/instaunfollow" target="_blank">View source on GitHub</a>
+  </footer>
+
+  <script>
+    // ─── Bookmarklet Code (self-contained, creates UI on Instagram) ───
+    const BOOKMARKLET_CODE = `(function(){
+      /* Toggle panel if already running */
+      if(document.getElementById('iu-panel')){
+        var p=document.getElementById('iu-panel');
+        p.style.display=p.style.display==='none'?'flex':'none';
+        return;
+      }
+
+      /* ─── State ─── */
+      var S={user:null,fg:[],fr:[],nf:[],sel:new Set(),scanning:false,unfollowing:false,paused:false};var MC={};
+
+      /* ─── Helpers ─── */
+      function csrf(){return(document.cookie.match(/csrftoken=([^;]+)/)||[])[1]||'';}
+      function rnd(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+      function wait(a,b){return new Promise(function(r){setTimeout(r,rnd(a,b));});}
+
+      async function api(path,method,body){
+        var h={'X-CSRFToken':csrf(),'X-Requested-With':'XMLHttpRequest','X-IG-App-ID':'936619743392459','Accept':'*/*'};
+        var o={method:method||'GET',credentials:'include',headers:h};
+        if(body){h['Content-Type']='application/x-www-form-urlencoded';o.body=body;}
+        var r=await fetch('https://www.instagram.com'+path,o);
+        if(!r.ok)throw new Error('HTTP '+r.status);
+        return r.json();
+      }
+
+      async function getUser(){
+        var id=(document.cookie.match(/ds_user_id=(\\d+)/)||[])[1];
+        if(!id)throw new Error('Not logged in. Please log in to Instagram first.');
+        try{var d=await api('/api/v1/accounts/current_user/?edit=true');if(d&&d.user)return{id:String(d.user.pk),name:d.user.username};}catch(e){}
+        try{var d=await api('/api/v1/users/'+id+'/info/');if(d&&d.user)return{id:id,name:d.user.username};}catch(e){}
+        try{var sc=document.querySelectorAll('script[type="application/json"]');for(var i=0;i<sc.length;i++){var m=(sc[i].textContent||'').match(/"username":"([^"]+)"/);if(m)return{id:id,name:m[1]};}}catch(e){}
+        try{if(window._sharedData&&window._sharedData.config&&window._sharedData.config.viewer)return{id:id,name:window._sharedData.config.viewer.username};}catch(e){}
+        try{var vm=document.body.innerHTML.match(/"username":"([^"]+)"/);if(vm)return{id:id,name:vm[1]};}catch(e){}
+        throw new Error('Could not get username (ID: '+id+'). Refresh and try again.');
+      }
+
+      async function fetchList(uid,type,cb){
+        var all=[],mx='',pg=0;
+        while(true){
+          var p='/api/v1/friendships/'+uid+'/'+type+'/?count=100';
+          if(mx)p+='&max_id='+mx;
+          var d=await api(p);
+          var u=(d.users||[]).map(function(x){return{id:String(x.pk),name:x.username,full:x.full_name||''};});
+          all=all.concat(u);pg++;
+          if(cb)cb(all.length,d.count||all.length);
+          if(!d.next_max_id||!d.big_list)break;
+          mx=d.next_max_id;
+          await wait(1000,2000);
+        }
+        return all;
+      }
+
+      async function fetchMedia(uid){
+        if(MC[uid])return MC[uid];
+        try{var d=await api('/api/v1/feed/user/'+uid+'/?count=12');
+        var imgs=[];(d.items||[]).forEach(function(it){
+          if(it.carousel_media){it.carousel_media.forEach(function(cm){if(cm.image_versions2)imgs.push(cm.image_versions2.candidates[0].url);});}
+          else if(it.image_versions2)imgs.push(it.image_versions2.candidates[0].url);
+        });MC[uid]=imgs.slice(0,9);return MC[uid];}catch(e){return[];}
+      }
+
+      /* ─── UI: Create Panel ─── */
+      var P=document.createElement('div');
+      P.id='iu-panel';
+      P.style.cssText='position:fixed;top:0;right:0;width:380px;height:100vh;background:#16213e;color:#e0e0e0;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif;z-index:999999;display:flex;flex-direction:column;box-shadow:-4px 0 24px rgba(0,0,0,0.5);font-size:13px;';
+
+      P.innerHTML=''+
+      '<div style="background:linear-gradient(135deg,#833AB4,#FD1D1D,#F77737);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">'+
+        '<span style="font-weight:700;font-size:16px;color:#fff;">InstaUnfollow</span>'+
+        '<span id="iu-close" style="cursor:pointer;font-size:18px;color:rgba(255,255,255,0.8);padding:4px 8px;">\\u2715</span>'+
+      '</div>'+
+      '<div id="iu-status" style="padding:10px 16px;background:#1a1a3e;border-bottom:1px solid #2a2a5a;font-size:13px;flex-shrink:0;">Initializing...</div>'+
+      '<div style="flex:1;overflow-y:auto;padding:16px;" id="iu-body">'+
+        '<button id="iu-scan" style="width:100%;padding:10px;background:#0095F6;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" disabled>Loading...</button>'+
+        '<div id="iu-progress" style="display:none;margin-top:12px;">'+
+          '<div style="margin-bottom:8px;"><span id="iu-fg-label">Following: 0</span></div>'+
+          '<div style="height:4px;background:#2a2a5a;border-radius:2px;overflow:hidden;margin-bottom:10px;"><div id="iu-fg-bar" style="height:100%;background:#0095F6;width:0%;transition:width 0.3s;"></div></div>'+
+          '<div style="margin-bottom:8px;"><span id="iu-fr-label">Followers: 0</span></div>'+
+          '<div style="height:4px;background:#2a2a5a;border-radius:2px;overflow:hidden;"><div id="iu-fr-bar" style="height:100%;background:#0095F6;width:0%;transition:width 0.3s;"></div></div>'+
+        '</div>'+
+        '<div id="iu-stats" style="display:none;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;">'+
+          '<div style="background:#1a1a3e;border-radius:8px;padding:10px;text-align:center;"><div id="iu-s-fg" style="font-size:22px;font-weight:700;">-</div><div style="font-size:10px;color:#888;text-transform:uppercase;margin-top:2px;">Following</div></div>'+
+          '<div style="background:#1a1a3e;border-radius:8px;padding:10px;text-align:center;"><div id="iu-s-fr" style="font-size:22px;font-weight:700;">-</div><div style="font-size:10px;color:#888;text-transform:uppercase;margin-top:2px;">Followers</div></div>'+
+          '<div style="background:#1a1a3e;border-radius:8px;padding:10px;text-align:center;"><div id="iu-s-mu" style="font-size:22px;font-weight:700;">-</div><div style="font-size:10px;color:#888;text-transform:uppercase;margin-top:2px;">Mutual</div></div>'+
+          '<div style="background:#1a1a3e;border-radius:8px;padding:10px;text-align:center;"><div id="iu-s-nf" style="font-size:22px;font-weight:700;color:#ED4956;">-</div><div style="font-size:10px;color:#888;text-transform:uppercase;margin-top:2px;">Not Following Back</div></div>'+
+        '</div>'+
+        '<div id="iu-list-section" style="display:none;margin-top:14px;">'+
+          '<div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;flex-wrap:wrap;">'+
+            '<input id="iu-search" type="text" placeholder="Search..." style="flex:1;min-width:120px;padding:6px 10px;background:#1a1a3e;border:1px solid #2a2a5a;border-radius:6px;color:#e0e0e0;font-size:12px;font-family:inherit;outline:none;">'+
+            '<button id="iu-sel-all" style="padding:4px 10px;background:transparent;border:1px solid #2a2a5a;border-radius:6px;color:#0095F6;font-size:11px;cursor:pointer;font-family:inherit;">All</button>'+
+            '<button id="iu-sel-none" style="padding:4px 10px;background:transparent;border:1px solid #2a2a5a;border-radius:6px;color:#0095F6;font-size:11px;cursor:pointer;font-family:inherit;">None</button>'+
+            '<span id="iu-sel-count" style="font-size:11px;color:#888;">0 selected</span>'+
+          '</div>'+
+          '<div id="iu-list" style="max-height:280px;overflow-y:auto;border:1px solid #2a2a5a;border-radius:8px;background:#0d1b36;"></div>'+
+        '</div>'+
+        '<div id="iu-unfollow-section" style="display:none;margin-top:14px;">'+
+          '<button id="iu-unfollow" style="width:100%;padding:10px;background:#ED4956;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" disabled>Unfollow 0 Users</button>'+
+          '<button id="iu-pause" style="display:none;width:100%;margin-top:6px;padding:8px;background:transparent;border:1px solid #2a2a5a;border-radius:8px;color:#FFB74D;font-size:12px;cursor:pointer;font-family:inherit;">Pause</button>'+
+          '<div id="iu-uf-progress" style="display:none;margin-top:10px;">'+
+            '<div id="iu-uf-label" style="font-size:12px;margin-bottom:4px;">0 / 0</div>'+
+            '<div style="height:4px;background:#2a2a5a;border-radius:2px;overflow:hidden;"><div id="iu-uf-bar" style="height:100%;background:#ED4956;width:0%;transition:width 0.3s;"></div></div>'+
+          '</div>'+
+        '</div>'+
+      '</div>'+
+      '<div id="iu-log" style="flex-shrink:0;max-height:150px;overflow-y:auto;padding:10px 16px;background:#0d1b2a;font-family:Consolas,Monaco,monospace;font-size:11px;line-height:1.5;border-top:1px solid #2a2a5a;"></div>';
+
+      document.body.appendChild(P);
+
+      /* ─── DOM Refs ─── */
+      var $=function(id){return document.getElementById(id);};
+
+      /* ─── Log ─── */
+      function log(msg,type){
+        var c={info:'#64B5F6',ok:'#81C784',warn:'#FFB74D',err:'#EF5350'}[type||'info'];
+        var t=new Date().toLocaleTimeString();
+        $('iu-log').innerHTML+='<div><span style="color:#555">['+t+']</span> <span style="color:'+c+'">'+msg+'</span></div>';
+        $('iu-log').scrollTop=$('iu-log').scrollHeight;
+      }
+
+      /* ─── Render List ─── */
+      function renderList(){
+        if(S.nf.length===0){$('iu-list-section').style.display='none';$('iu-unfollow-section').style.display='none';return;}
+        $('iu-list-section').style.display='block';
+        $('iu-unfollow-section').style.display='block';
+        var h='';
+        S.nf.forEach(function(u){
+          h+='<label style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid #1a2a4a;cursor:pointer;font-size:13px;" data-n="'+u.name.toLowerCase()+'" data-uid="'+u.id+'">'+
+            '<input type="checkbox" data-id="'+u.id+'" style="accent-color:#0095F6;width:15px;height:15px;flex-shrink:0;">'+
+            '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">@'+u.name+'</span>'+
+            '<span style="font-size:11px;color:#666;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px;">'+u.full+'</span>'+
+          '</label>';
+        });
+        $('iu-list').innerHTML=h;
+        $('iu-list').querySelectorAll('input[type=checkbox]').forEach(function(cb){
+          cb.addEventListener('change',function(){
+            if(this.checked)S.sel.add(this.dataset.id);else S.sel.delete(this.dataset.id);
+            updCount();
+          });
+        });
+        $('iu-list').querySelectorAll('label').forEach(function(lb){
+          lb.addEventListener('mouseenter',function(){showPreview(lb.dataset.uid,lb);});
+          lb.addEventListener('mouseleave',function(){hidePreview();});
+        });
+        updCount();
+      }
+
+      function updCount(){
+        $('iu-sel-count').textContent=S.sel.size+' selected';
+        $('iu-unfollow').textContent='Unfollow '+S.sel.size+' Users';
+        $('iu-unfollow').disabled=S.sel.size===0||S.unfollowing;
+      }
+
+      /* ─── Preview ─── */
+      var pvDiv=document.createElement('div');pvDiv.id='iu-pv';
+      pvDiv.style.cssText='position:fixed;right:384px;width:280px;background:#16213e;border:1px solid #2a2a5a;border-radius:10px;box-shadow:-4px 4px 20px rgba(0,0,0,0.6);z-index:999998;display:none;overflow:hidden;';
+      pvDiv.innerHTML='<div id="iu-pv-hdr" style="padding:8px 12px;font-size:13px;font-weight:600;border-bottom:1px solid #2a2a5a;color:#e0e0e0;"></div><div id="iu-pv-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;padding:2px;"></div><div id="iu-pv-load" style="padding:16px;text-align:center;color:#888;font-size:11px;">Loading...</div>';
+      document.body.appendChild(pvDiv);
+      var pvTimer=null;
+      function showPreview(uid,el){
+        clearTimeout(pvTimer);
+        pvTimer=setTimeout(async function(){
+          var rect=el.getBoundingClientRect();
+          pvDiv.style.top=Math.max(8,Math.min(rect.top,window.innerHeight-320))+'px';
+          pvDiv.style.display='block';
+          $('iu-pv-hdr').textContent='@'+((S.nf.find(function(x){return x.id===uid;})||{}).name||'');
+          $('iu-pv-grid').innerHTML='';$('iu-pv-load').style.display='block';
+          var imgs=await fetchMedia(uid);
+          if(pvDiv.style.display==='none')return;
+          $('iu-pv-load').style.display='none';
+          if(imgs.length===0){$('iu-pv-grid').innerHTML='<div style="grid-column:1/-1;padding:16px;text-align:center;color:#666;font-size:11px;">No posts</div>';return;}
+          var gh='';imgs.forEach(function(url){gh+='<img src="'+url+'" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;" loading="lazy">';});
+          $('iu-pv-grid').innerHTML=gh;
+        },300);
+      }
+      function hidePreview(){clearTimeout(pvTimer);pvDiv.style.display='none';}
+
+      /* ─── Scan ─── */
+      async function scan(){
+        if(S.scanning)return;
+        S.scanning=true;
+        $('iu-scan').disabled=true;
+        $('iu-scan').textContent='Scanning...';
+        $('iu-progress').style.display='block';
+        try{
+          log('Fetching following list...','info');
+          S.fg=await fetchList(S.user.id,'following',function(n,t){
+            $('iu-fg-label').textContent='Following: '+n+(t?' / '+t:'');
+            $('iu-fg-bar').style.width=Math.min(100,Math.round(n/Math.max(t,1)*100))+'%';
+          });
+          log('Found '+S.fg.length+' following','ok');
+          $('iu-fg-bar').style.width='100%';
+
+          log('Fetching followers list...','info');
+          S.fr=await fetchList(S.user.id,'followers',function(n,t){
+            $('iu-fr-label').textContent='Followers: '+n+(t?' / '+t:'');
+            $('iu-fr-bar').style.width=Math.min(100,Math.round(n/Math.max(t,1)*100))+'%';
+          });
+          log('Found '+S.fr.length+' followers','ok');
+          $('iu-fr-bar').style.width='100%';
+
+          var fids=new Set(S.fr.map(function(u){return u.id;}));
+          S.nf=S.fg.filter(function(u){return!fids.has(u.id);});
+          var mutual=S.fg.length-S.nf.length;
+
+          $('iu-stats').style.display='grid';
+          $('iu-s-fg').textContent=S.fg.length;
+          $('iu-s-fr').textContent=S.fr.length;
+          $('iu-s-mu').textContent=mutual;
+          $('iu-s-nf').textContent=S.nf.length;
+
+          log(S.nf.length+' users don\\'t follow you back','ok');
+          renderList();
+          $('iu-scan').textContent='Scan Complete';
+        }catch(err){
+          log('Scan error: '+err.message,'err');
+          $('iu-scan').disabled=false;
+          $('iu-scan').textContent='Retry Scan';
+        }
+        S.scanning=false;
+      }
+
+      /* ─── Unfollow ─── */
+      async function doUnfollow(){
+        var users=S.nf.filter(function(u){return S.sel.has(u.id);});
+        if(users.length===0)return;
+        var est=Math.ceil(users.length*50/60);
+        var etaStr=est>=60?Math.floor(est/60)+'h '+est%60+'m':est+'m';
+        if(!confirm('Unfollow '+users.length+' users?\\n\\nEstimated time: ~'+etaStr+'\\n(Uses safe randomized delays to protect your account)'))return;
+
+        S.unfollowing=true;
+        $('iu-unfollow').disabled=true;
+        $('iu-unfollow').textContent='Unfollowing...';
+        $('iu-pause').style.display='block';
+        $('iu-uf-progress').style.display='block';
+
+        var done=0,failed=0;
+        var pauseEvery=rnd(12,18);
+        var actionCount=0;
+        var t0=Date.now();
+
+        for(var i=0;i<users.length;i++){
+          while(S.paused)await wait(500,500);
+          var u=users[i];
+          try{
+            await api('/api/v1/friendships/destroy/'+u.id+'/','POST','');
+            done++;
+            log('Unfollowed @'+u.name+' ('+done+'/'+users.length+')','ok');
+            var el=document.querySelector('[data-uid="'+u.id+'"]');if(el)el.remove();
+            S.nf=S.nf.filter(function(x){return x.id!==u.id;});S.sel.delete(u.id);
+            var nc=$('iu-s-nf');if(nc)nc.textContent=S.nf.length;
+          }catch(err){
+            failed++;
+            log('Failed @'+u.name+': '+err.message,'err');
+          }
+
+          var pct=Math.round((done+failed)/users.length*100);
+          $('iu-uf-bar').style.width=pct+'%';
+          var elapsed=(Date.now()-t0)/1000;var avg=elapsed/(done+failed);var rem=Math.round(avg*(users.length-done-failed));
+          var eta=rem>=60?Math.floor(rem/60)+'m '+rem%60+'s':rem+'s';
+          $('iu-uf-label').textContent=(done+failed)+'/'+users.length+(failed?' ('+failed+' fail)':'')+' \\u00b7 ETA '+eta;
+
+          actionCount++;
+          if(actionCount>=pauseEvery&&i<users.length-1){
+            var p=rnd(180000,360000);
+            if(done>50)p=rnd(300000,480000);
+            if(done>100)p=rnd(480000,900000);
+            log('Safety pause: '+(p/60000).toFixed(1)+' min ('+done+' done so far)','warn');
+            $('iu-uf-label').textContent=(done+failed)+'/'+users.length+' \\u00b7 Pause '+(p/60000).toFixed(1)+'m';
+            await wait(p,p+1000);
+            actionCount=0;pauseEvery=rnd(12,18);
+          }else{
+            await wait(20000,35000);
+          }
+        }
+
+        log('Done! '+done+' unfollowed'+(failed?', '+failed+' failed':'')+'.','ok');
+        $('iu-unfollow').textContent='Complete';
+        $('iu-pause').style.display='none';
+        S.unfollowing=false;
+      }
+
+      /* ─── Events ─── */
+      $('iu-close').onclick=function(){P.style.display='none';};
+      $('iu-scan').onclick=scan;
+      $('iu-unfollow').onclick=doUnfollow;
+      $('iu-pause').onclick=function(){
+        S.paused=!S.paused;
+        $('iu-pause').textContent=S.paused?'Resume':'Pause';
+        $('iu-pause').style.color=S.paused?'#81C784':'#FFB74D';
+        log(S.paused?'Paused by user.':'Resumed.','warn');
+      };
+      $('iu-sel-all').onclick=function(){
+        S.sel.clear();
+        $('iu-list').querySelectorAll('label').forEach(function(l){
+          if(l.style.display!=='none'){var cb=l.querySelector('input');cb.checked=true;S.sel.add(cb.dataset.id);}
+        });
+        updCount();
+      };
+      $('iu-sel-none').onclick=function(){
+        S.sel.clear();
+        $('iu-list').querySelectorAll('input[type=checkbox]').forEach(function(cb){cb.checked=false;});
+        updCount();
+      };
+      $('iu-search').oninput=function(){
+        var q=this.value.toLowerCase();
+        $('iu-list').querySelectorAll('label').forEach(function(l){
+          l.style.display=(l.dataset.n||'').includes(q)?'flex':'none';
+        });
+      };
+
+      /* ─── Init ─── */
+      log('Initializing...','info');
+      getUser().then(function(me){
+        S.user=me;
+        $('iu-status').innerHTML='<span style="color:#81C784;">\\u2713</span> Connected as <strong>@'+me.name+'</strong>';
+        $('iu-scan').disabled=false;
+        $('iu-scan').textContent='Start Scan';
+        log('Connected as @'+me.name+' (ID: '+me.id+')','ok');
+      }).catch(function(err){
+        $('iu-status').innerHTML='<span style="color:#EF5350;">\\u2717</span> '+err.message;
+        $('iu-scan').textContent='Error';
+        log(err.message,'err');
+      });
+    })();`;
+
+    // Set bookmarklet href
+    document.getElementById('bookmarkletLink').href =
+      'javascript:' + encodeURIComponent(BOOKMARKLET_CODE);
+  </script>
+
+</body>
+</html>

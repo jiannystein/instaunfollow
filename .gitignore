@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build output
+dist/
+
+# Session data & personal results (SENSITIVE)
+data/
+
+# Environment
+.env
+
+# Logs
+*.log
+
+# Editor & tool configs
+.claude/
+.playwright-mcp/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
