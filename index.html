@@ -116,7 +116,7 @@
       <div class="step-desc">
         While on instagram.com, click the <strong>"InstaUnfollow"</strong> bookmark you saved.
         A control panel will appear on the right side of the page with everything you need:
-        scan, results, selection, and unfollow.
+        scan, results, selection, unfollow, and follow-back.
       </div>
       <div class="preview-img">
         Panel preview:<br>
@@ -124,12 +124,11 @@
         &#9474; InstaUnfollow    [&#10005;] &#9474;<br>
         &#9474; Connected: @you       &#9474;<br>
         &#9474; [Start Scan]          &#9474;<br>
-        &#9474; Following: 380        &#9474;<br>
-        &#9474; Followers: 420        &#9474;<br>
-        &#9474; Not following back: 72 &#9474;<br>
+        &#9474; Following: 380 | Fans: 42 &#9474;<br>
+        &#9474; [Not Following] [Fans]&#9474;<br>
         &#9474; &#9744; @user1              &#9474;<br>
         &#9474; &#9744; @user2              &#9474;<br>
-        &#9474; [Unfollow Selected]   &#9474;<br>
+        &#9474; [Unfollow] / [Follow] &#9474;<br>
         &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;
       </div>
     </div>
@@ -147,9 +146,9 @@
 1. It reads your login session (from cookies)
 2. Calls Instagram's API to fetch your following list
 3. Calls Instagram's API to fetch your followers list
-4. Compares the two lists to find non-followers
-5. Shows results in a panel &mdash; you select who to unfollow
-6. Unfollows with randomized delays to protect your account
+4. Compares the two lists to find non-followers and fans
+5. Shows results in tabbed panels &mdash; select who to unfollow or follow back
+6. Executes actions with randomized delays to protect your account
 
 Everything runs in YOUR browser. No external servers involved.</div>
       <p>
@@ -158,8 +157,9 @@ Everything runs in YOUR browser. No external servers involved.</div>
         bypassing these restrictions without any server or extension needed.
       </p>
       <p>
-        <strong>Rate limiting:</strong> The tool waits 20&ndash;35 seconds between unfollows, pauses for
-        3&ndash;8 minutes every ~15 actions, and scales up pauses the further you go &mdash; no hard cap.
+        <strong>Rate limiting:</strong> The tool waits 15&ndash;25 seconds between actions (Safe mode), pauses for
+        2&ndash;4 minutes every ~18 actions, and scales up pauses the further you go &mdash; no hard cap.
+        Fast mode cuts that to 5&ndash;10 seconds with shorter pauses.
       </p>
       <p>
         <strong>Want to verify?</strong> Right-click the bookmarklet &rarr; Edit &rarr; you can read
@@ -185,7 +185,7 @@ Everything runs in YOUR browser. No external servers involved.</div>
       }
 
       /* ─── State ─── */
-      var S={user:null,fg:[],fr:[],nf:[],sel:new Set(),scanning:false,unfollowing:false,paused:false,fast:false};var MC={};
+      var S={user:null,fg:[],fr:[],nf:[],fans:[],sel:new Set(),scanning:false,unfollowing:false,paused:false,fast:false,tab:'nf'};var MC={};
 
       /* ─── Helpers ─── */
       function csrf(){return(document.cookie.match(/csrftoken=([^;]+)/)||[])[1]||'';}
@@ -218,7 +218,7 @@ Everything runs in YOUR browser. No external servers involved.</div>
           var p='/api/v1/friendships/'+uid+'/'+type+'/?count=100';
           if(mx)p+='&max_id='+mx;
           var d=await api(p);
-          var u=(d.users||[]).map(function(x){return{id:String(x.pk),name:x.username,full:x.full_name||''};});
+          var u=(d.users||[]).map(function(x){return{id:String(x.pk),name:x.username,full:x.full_name||'',pic:x.profile_pic_url||''};});
           all=all.concat(u);pg++;
           if(cb)cb(all.length,d.count||all.length);
           if(!d.next_max_id||!d.big_list)break;
@@ -237,6 +237,8 @@ Everything runs in YOUR browser. No external servers involved.</div>
         });MC[uid]=imgs.slice(0,9);return MC[uid];}catch(e){return[];}
       }
 
+      function activeList(){return S.tab==='fans'?S.fans:S.nf;}
+
       /* ─── UI: Create Panel ─── */
       var P=document.createElement('div');
       P.id='iu-panel';
@@ -244,8 +246,11 @@ Everything runs in YOUR browser. No external servers involved.</div>
 
       P.innerHTML=''+
       '<div style="background:linear-gradient(135deg,#833AB4,#FD1D1D,#F77737);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">'+
-        '<span style="font-weight:700;font-size:16px;color:#fff;">InstaUnfollow</span>'+
-        '<span id="iu-close" style="cursor:pointer;font-size:18px;color:rgba(255,255,255,0.8);padding:4px 8px;">\\u2715</span>'+
+        '<span style="font-weight:700;font-size:16px;color:#fff;">\\ud83d\\udd0d InstaUnfollow</span>'+
+        '<div style="display:flex;align-items:center;gap:10px;">'+
+          '<a href="https://github.com/jiannystein/instaunfollow" target="_blank" title="View on GitHub" style="color:rgba(255,255,255,0.85);display:flex;"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg></a>'+
+          '<span id="iu-close" style="cursor:pointer;font-size:18px;color:rgba(255,255,255,0.8);padding:4px 8px;">\\u2715</span>'+
+        '</div>'+
       '</div>'+
       '<div id="iu-status" style="padding:10px 16px;background:#1a1a3e;border-bottom:1px solid #2a2a5a;font-size:13px;flex-shrink:0;">Initializing...</div>'+
       '<div style="flex:1;overflow-y:auto;padding:16px;" id="iu-body">'+
@@ -256,13 +261,24 @@ Everything runs in YOUR browser. No external servers involved.</div>
           '<div style="margin-bottom:8px;"><span id="iu-fr-label">Followers: 0</span></div>'+
           '<div style="height:4px;background:#2a2a5a;border-radius:2px;overflow:hidden;"><div id="iu-fr-bar" style="height:100%;background:#0095F6;width:0%;transition:width 0.3s;"></div></div>'+
         '</div>'+
-        '<div id="iu-stats" style="display:none;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;">'+
-          '<div style="background:#1a1a3e;border-radius:8px;padding:10px;text-align:center;"><div id="iu-s-fg" style="font-size:22px;font-weight:700;">-</div><div style="font-size:10px;color:#888;text-transform:uppercase;margin-top:2px;">Following</div></div>'+
-          '<div style="background:#1a1a3e;border-radius:8px;padding:10px;text-align:center;"><div id="iu-s-fr" style="font-size:22px;font-weight:700;">-</div><div style="font-size:10px;color:#888;text-transform:uppercase;margin-top:2px;">Followers</div></div>'+
-          '<div style="background:#1a1a3e;border-radius:8px;padding:10px;text-align:center;"><div id="iu-s-mu" style="font-size:22px;font-weight:700;">-</div><div style="font-size:10px;color:#888;text-transform:uppercase;margin-top:2px;">Mutual</div></div>'+
-          '<div style="background:#1a1a3e;border-radius:8px;padding:10px;text-align:center;"><div id="iu-s-nf" style="font-size:22px;font-weight:700;color:#ED4956;">-</div><div style="font-size:10px;color:#888;text-transform:uppercase;margin-top:2px;">Not Following Back</div></div>'+
+        '<div id="iu-stats" style="display:none;margin-top:14px;">'+
+          '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">'+
+            '<div style="background:#1a1a3e;border-radius:8px;padding:10px;text-align:center;"><div id="iu-s-fg" style="font-size:20px;font-weight:700;">-</div><div style="font-size:10px;color:#888;text-transform:uppercase;margin-top:2px;">Following</div></div>'+
+            '<div style="background:#1a1a3e;border-radius:8px;padding:10px;text-align:center;"><div id="iu-s-fr" style="font-size:20px;font-weight:700;">-</div><div style="font-size:10px;color:#888;text-transform:uppercase;margin-top:2px;">Followers</div></div>'+
+            '<div style="background:#1a1a3e;border-radius:8px;padding:10px;text-align:center;"><div id="iu-s-mu" style="font-size:20px;font-weight:700;">-</div><div style="font-size:10px;color:#888;text-transform:uppercase;margin-top:2px;">Mutual</div></div>'+
+          '</div>'+
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'+
+            '<div style="background:#1a1a3e;border-radius:8px;padding:10px;text-align:center;"><div id="iu-s-nf" style="font-size:20px;font-weight:700;color:#ED4956;">-</div><div style="font-size:10px;color:#888;text-transform:uppercase;margin-top:2px;">Not Following Back</div></div>'+
+            '<div style="background:#1a1a3e;border-radius:8px;padding:10px;text-align:center;"><div id="iu-s-fans" style="font-size:20px;font-weight:700;color:#0095F6;">-</div><div style="font-size:10px;color:#888;text-transform:uppercase;margin-top:2px;">Fans</div></div>'+
+          '</div>'+
         '</div>'+
-        '<div id="iu-list-section" style="display:none;margin-top:14px;">'+
+        '<div id="iu-tabs" style="display:none;margin-top:14px;">'+
+          '<div style="display:flex;border-bottom:2px solid #2a2a5a;margin-bottom:12px;">'+
+            '<button id="iu-tab-nf" style="flex:1;padding:10px 0;background:transparent;border:none;border-bottom:2px solid #ED4956;margin-bottom:-2px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">Not Following Back (<span id="iu-tab-nf-n">0</span>)</button>'+
+            '<button id="iu-tab-fans" style="flex:1;padding:10px 0;background:transparent;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;color:#666;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">Fans (<span id="iu-tab-fans-n">0</span>)</button>'+
+          '</div>'+
+        '</div>'+
+        '<div id="iu-list-section" style="display:none;">'+
           '<div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;flex-wrap:wrap;">'+
             '<input id="iu-search" type="text" placeholder="Search..." style="flex:1;min-width:120px;padding:6px 10px;background:#1a1a3e;border:1px solid #2a2a5a;border-radius:6px;color:#e0e0e0;font-size:12px;font-family:inherit;outline:none;">'+
             '<button id="iu-sel-all" style="padding:4px 10px;background:transparent;border:1px solid #2a2a5a;border-radius:6px;color:#0095F6;font-size:11px;cursor:pointer;font-family:inherit;">All</button>'+
@@ -271,13 +287,13 @@ Everything runs in YOUR browser. No external servers involved.</div>
           '</div>'+
           '<div id="iu-list" style="max-height:280px;overflow-y:auto;border:1px solid #2a2a5a;border-radius:8px;background:#0d1b36;"></div>'+
         '</div>'+
-        '<div id="iu-unfollow-section" style="display:none;margin-top:14px;">'+
+        '<div id="iu-action-section" style="display:none;margin-top:14px;">'+
           '<div style="display:flex;gap:4px;margin-bottom:10px;background:#0d1b36;border-radius:8px;padding:3px;position:relative;">'+
             '<button id="iu-mode-safe" style="flex:1;padding:7px 0;border:none;border-radius:6px;background:#0095F6;color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.2s;">Safe</button>'+
             '<button id="iu-mode-fast" style="flex:1;padding:7px 0;border:none;border-radius:6px;background:transparent;color:#666;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.2s;">Fast</button>'+
           '</div>'+
-          '<div id="iu-mode-desc" style="font-size:11px;color:#888;margin-bottom:10px;line-height:1.4;">20\\u201335s between actions, ~15 per batch. Safest option.</div>'+
-          '<button id="iu-unfollow" style="width:100%;padding:10px;background:#ED4956;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" disabled>Unfollow 0 Users</button>'+
+          '<div id="iu-mode-desc" style="font-size:11px;color:#888;margin-bottom:10px;line-height:1.4;">15\\u201325s between actions, ~18 per batch. Safest option.</div>'+
+          '<button id="iu-action-btn" style="width:100%;padding:10px;background:#ED4956;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" disabled>Unfollow 0 Users</button>'+
           '<button id="iu-pause" style="display:none;width:100%;margin-top:6px;padding:8px;background:transparent;border:1px solid #2a2a5a;border-radius:8px;color:#FFB74D;font-size:12px;cursor:pointer;font-family:inherit;">Pause</button>'+
           '<div id="iu-uf-progress" style="display:none;margin-top:10px;">'+
             '<div id="iu-uf-label" style="font-size:12px;margin-bottom:4px;">0 / 0</div>'+
@@ -300,13 +316,30 @@ Everything runs in YOUR browser. No external servers involved.</div>
         $('iu-log').scrollTop=$('iu-log').scrollHeight;
       }
 
+      /* ─── Tab Switching ─── */
+      function switchTab(tab){
+        if(S.unfollowing)return;
+        S.tab=tab;
+        S.sel.clear();
+        $('iu-search').value='';
+        if(tab==='nf'){
+          $('iu-tab-nf').style.borderBottomColor='#ED4956';$('iu-tab-nf').style.color='#fff';
+          $('iu-tab-fans').style.borderBottomColor='transparent';$('iu-tab-fans').style.color='#666';
+        }else{
+          $('iu-tab-fans').style.borderBottomColor='#0095F6';$('iu-tab-fans').style.color='#fff';
+          $('iu-tab-nf').style.borderBottomColor='transparent';$('iu-tab-nf').style.color='#666';
+        }
+        renderList();
+      }
+
       /* ─── Render List ─── */
       function renderList(){
-        if(S.nf.length===0){$('iu-list-section').style.display='none';$('iu-unfollow-section').style.display='none';return;}
+        var list=activeList();
+        if(list.length===0){$('iu-list-section').style.display='none';$('iu-action-section').style.display='none';return;}
         $('iu-list-section').style.display='block';
-        $('iu-unfollow-section').style.display='block';
+        $('iu-action-section').style.display='block';
         var h='';
-        S.nf.forEach(function(u){
+        list.forEach(function(u){
           h+='<label style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid #1a2a4a;cursor:pointer;font-size:13px;" data-n="'+u.name.toLowerCase()+'" data-uid="'+u.id+'">'+
             '<input type="checkbox" data-id="'+u.id+'" style="accent-color:#0095F6;width:15px;height:15px;flex-shrink:0;">'+
             '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">@'+u.name+'</span>'+
@@ -329,33 +362,103 @@ Everything runs in YOUR browser. No external servers involved.</div>
 
       function updCount(){
         $('iu-sel-count').textContent=S.sel.size+' selected';
-        $('iu-unfollow').textContent='Unfollow '+S.sel.size+' Users';
-        $('iu-unfollow').disabled=S.sel.size===0||S.unfollowing;
+        if(S.tab==='fans'){
+          $('iu-action-btn').textContent='Follow Back '+S.sel.size+' Users';
+          $('iu-action-btn').style.background='#0095F6';
+        }else{
+          $('iu-action-btn').textContent='Unfollow '+S.sel.size+' Users';
+          $('iu-action-btn').style.background='#ED4956';
+        }
+        $('iu-action-btn').disabled=S.sel.size===0||S.unfollowing;
       }
 
       /* ─── Preview ─── */
       var pvDiv=document.createElement('div');pvDiv.id='iu-pv';
       pvDiv.style.cssText='position:fixed;right:384px;width:280px;background:#16213e;border:1px solid #2a2a5a;border-radius:10px;box-shadow:-4px 4px 20px rgba(0,0,0,0.6);z-index:999998;display:none;overflow:hidden;';
-      pvDiv.innerHTML='<div id="iu-pv-hdr" style="padding:8px 12px;font-size:13px;font-weight:600;border-bottom:1px solid #2a2a5a;color:#e0e0e0;"></div><div id="iu-pv-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;padding:2px;"></div><div id="iu-pv-load" style="padding:16px;text-align:center;color:#888;font-size:11px;">Loading...</div>';
+      var pvBtnStyle='padding:5px 12px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:#fff;transition:opacity 0.2s;white-space:nowrap;';
+      pvDiv.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;padding:12px;gap:8px;border-bottom:1px solid #2a2a5a;">'+
+        '<img id="iu-pv-avatar" src="" style="width:120px;height:120px;border-radius:50%;object-fit:cover;display:none;border:3px solid #2a2a5a;">'+
+        '<div id="iu-pv-btns" style="display:flex;gap:4px;"></div>'+
+      '</div>'+
+      '<div id="iu-pv-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;padding:2px;"></div>'+
+      '<div id="iu-pv-load" style="padding:16px;text-align:center;color:#888;font-size:11px;">Loading...</div>';
       document.body.appendChild(pvDiv);
-      var pvTimer=null;
+      var pvTimer=null,pvHideTimer=null,pvUid=null;
+      pvDiv.addEventListener('mouseenter',function(){clearTimeout(pvHideTimer);});
+      pvDiv.addEventListener('mouseleave',function(){pvHideTimer=setTimeout(function(){pvDiv.style.display='none';pvUid=null;},200);});
+
+      function renderPvButtons(){
+        var c=$('iu-pv-btns');c.innerHTML='';
+        if(S.tab==='fans'){
+          c.innerHTML='<button id="iu-pv-follow" style="'+pvBtnStyle+'background:#0095F6;">Follow Back</button>'+
+            '<button id="iu-pv-remove" style="'+pvBtnStyle+'background:transparent;border:1px solid #666;color:#ccc;">Remove</button>';
+        }else{
+          c.innerHTML='<button id="iu-pv-unfollow" style="'+pvBtnStyle+'background:#ED4956;">Unfollow</button>';
+        }
+      }
+
       function showPreview(uid,el){
-        clearTimeout(pvTimer);
+        clearTimeout(pvTimer);clearTimeout(pvHideTimer);
         pvTimer=setTimeout(async function(){
+          pvUid=uid;
           var rect=el.getBoundingClientRect();
-          pvDiv.style.top=Math.max(8,Math.min(rect.top,window.innerHeight-320))+'px';
           pvDiv.style.display='block';
-          $('iu-pv-hdr').textContent='@'+((S.nf.find(function(x){return x.id===uid;})||{}).name||'');
+          var list=activeList();
+          var user=list.find(function(x){return x.id===uid;});
+          var av=$('iu-pv-avatar');if(user&&user.pic){av.src=user.pic;av.style.display='block';}else{av.style.display='none';av.src='';}
+          renderPvButtons();bindPvButtons();
           $('iu-pv-grid').innerHTML='';$('iu-pv-load').style.display='block';
+          function posPv(){var h=pvDiv.offsetHeight;pvDiv.style.top=Math.max(8,Math.min(rect.top,window.innerHeight-h-8))+'px';}
+          posPv();
           var imgs=await fetchMedia(uid);
-          if(pvDiv.style.display==='none')return;
+          if(pvDiv.style.display==='none'||pvUid!==uid)return;
           $('iu-pv-load').style.display='none';
-          if(imgs.length===0){$('iu-pv-grid').innerHTML='<div style="grid-column:1/-1;padding:16px;text-align:center;color:#666;font-size:11px;">No posts</div>';return;}
+          if(imgs.length===0){$('iu-pv-grid').innerHTML='<div style="grid-column:1/-1;padding:16px;text-align:center;color:#666;font-size:11px;">No posts</div>';posPv();return;}
           var gh='';imgs.forEach(function(url){gh+='<img src="'+url+'" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;" loading="lazy">';});
-          $('iu-pv-grid').innerHTML=gh;
+          $('iu-pv-grid').innerHTML=gh;posPv();
         },300);
       }
-      function hidePreview(){clearTimeout(pvTimer);pvDiv.style.display='none';}
+      function hidePreview(){clearTimeout(pvTimer);pvHideTimer=setTimeout(function(){pvDiv.style.display='none';pvUid=null;},200);}
+
+      /* ─── Quick Action (from preview) ─── */
+      function pvQuickAction(action){
+        return async function(){
+          var uid=pvUid;if(!uid)return;
+          var btn=this;
+          var list=activeList();
+          var user=list.find(function(x){return x.id===uid;});
+          if(!user)return;
+          var labels={follow:'Following...',unfollow:'Unfollowing...',remove:'Removing...'};
+          var doneLabels={follow:'Followed!',unfollow:'Unfollowed!',remove:'Removed!'};
+          var logLabels={follow:'Followed back',unfollow:'Unfollowed',remove:'Removed follower'};
+          var endpoints={follow:'/api/v1/friendships/create/',unfollow:'/api/v1/friendships/destroy/',remove:'/api/v1/friendships/remove_follower/'};
+          btn.disabled=true;btn.style.opacity='0.5';btn.textContent=labels[action];
+          var sibling=btn.parentNode.querySelectorAll('button');sibling.forEach(function(b){if(b!==btn){b.disabled=true;b.style.opacity='0.3';}});
+          try{
+            await api(endpoints[action]+uid+'/','POST','');
+            if(S.tab==='fans'){S.fans=S.fans.filter(function(x){return x.id!==uid;});}
+            else{S.nf=S.nf.filter(function(x){return x.id!==uid;});}
+            S.sel.delete(uid);
+            var el=document.querySelector('[data-uid="'+uid+'"]');if(el)el.remove();
+            $('iu-s-nf').textContent=S.nf.length;$('iu-s-fans').textContent=S.fans.length;
+            $('iu-tab-nf-n').textContent=S.nf.length;$('iu-tab-fans-n').textContent=S.fans.length;
+            updCount();
+            log(logLabels[action]+' @'+user.name+' (quick)','ok');
+            btn.textContent=doneLabels[action];btn.style.background='#81C784';btn.style.opacity='1';
+            setTimeout(function(){pvDiv.style.display='none';pvUid=null;},600);
+          }catch(err){
+            btn.textContent='Failed';btn.style.background='#EF5350';btn.disabled=false;btn.style.opacity='1';
+            sibling.forEach(function(b){b.disabled=false;b.style.opacity='1';});
+            log('Quick action failed @'+user.name+': '+err.message,'err');
+            setTimeout(function(){renderPvButtons();bindPvButtons();},1500);
+          }
+        };
+      }
+      function bindPvButtons(){
+        var f=$('iu-pv-follow');if(f)f.onclick=pvQuickAction('follow');
+        var r=$('iu-pv-remove');if(r)r.onclick=pvQuickAction('remove');
+        var u=$('iu-pv-unfollow');if(u)u.onclick=pvQuickAction('unfollow');
+      }
 
       /* ─── Scan ─── */
       async function scan(){
@@ -383,16 +486,24 @@ Everything runs in YOUR browser. No external servers involved.</div>
 
           var fids=new Set(S.fr.map(function(u){return u.id;}));
           S.nf=S.fg.filter(function(u){return!fids.has(u.id);});
+          var gids=new Set(S.fg.map(function(u){return u.id;}));
+          S.fans=S.fr.filter(function(u){return!gids.has(u.id);});
           var mutual=S.fg.length-S.nf.length;
 
-          $('iu-stats').style.display='grid';
+          $('iu-stats').style.display='block';
           $('iu-s-fg').textContent=S.fg.length;
           $('iu-s-fr').textContent=S.fr.length;
           $('iu-s-mu').textContent=mutual;
           $('iu-s-nf').textContent=S.nf.length;
+          $('iu-s-fans').textContent=S.fans.length;
 
-          log(S.nf.length+' users don\\'t follow you back','ok');
-          renderList();
+          $('iu-tabs').style.display='block';
+          $('iu-tab-nf-n').textContent=S.nf.length;
+          $('iu-tab-fans-n').textContent=S.fans.length;
+
+          log(S.nf.length+' don\\'t follow you back, '+S.fans.length+' fans you don\\'t follow','ok');
+          S.tab='nf';
+          switchTab('nf');
           $('iu-scan').textContent='Scan Complete';
         }catch(err){
           log('Scan error: '+err.message,'err');
@@ -402,41 +513,53 @@ Everything runs in YOUR browser. No external servers involved.</div>
         S.scanning=false;
       }
 
-      /* ─── Unfollow ─── */
-      async function doUnfollow(){
-        var users=S.nf.filter(function(u){return S.sel.has(u.id);});
+      /* ─── Action (Unfollow / Follow Back) ─── */
+      async function doAction(){
+        var isFollow=S.tab==='fans';
+        var sourceList=activeList();
+        var users=sourceList.filter(function(u){return S.sel.has(u.id);});
         if(users.length===0)return;
-        var spd=S.fast?25:50;
+        var actionName=isFollow?'Follow Back':'Unfollow';
+        var endpoint=isFollow?'/api/v1/friendships/create/':'/api/v1/friendships/destroy/';
+        var spd=S.fast?13:35;
         var est=Math.ceil(users.length*spd/60);
         var etaStr=est>=60?Math.floor(est/60)+'h '+est%60+'m':est+'m';
         var modeLabel=S.fast?'Fast':'Safe';
-        if(!confirm('Unfollow '+users.length+' users? ('+modeLabel+' mode)\\n\\nEstimated time: ~'+etaStr+'\\n(Uses randomized delays to protect your account)'))return;
+        if(!confirm(actionName+' '+users.length+' users? ('+modeLabel+' mode)\\n\\nEstimated time: ~'+etaStr+'\\n(Uses randomized delays to protect your account)'))return;
 
         S.unfollowing=true;
-        $('iu-unfollow').disabled=true;
-        $('iu-unfollow').textContent='Unfollowing...';
+        $('iu-action-btn').disabled=true;
+        $('iu-action-btn').textContent=isFollow?'Following...':'Unfollowing...';
         $('iu-pause').style.display='block';
         $('iu-uf-progress').style.display='block';
+        $('iu-uf-bar').style.background=isFollow?'#0095F6':'#ED4956';
         $('iu-mode-safe').style.pointerEvents='none';$('iu-mode-fast').style.pointerEvents='none';
+        $('iu-tab-nf').style.pointerEvents='none';$('iu-tab-fans').style.pointerEvents='none';
 
         var done=0,failed=0;
-        var pauseEvery=S.fast?rnd(18,25):rnd(12,18);
+        var pauseEvery=S.fast?rnd(20,30):rnd(15,20);
         var actionCount=0;
         var t0=Date.now();
+        var pastVerb=isFollow?'Followed':'Unfollowed';
+        var failVerb=isFollow?'follow':'unfollow';
 
         for(var i=0;i<users.length;i++){
           while(S.paused)await wait(500,500);
           var u=users[i];
           try{
-            await api('/api/v1/friendships/destroy/'+u.id+'/','POST','');
+            await api(endpoint+u.id+'/','POST','');
             done++;
-            log('Unfollowed @'+u.name+' ('+done+'/'+users.length+')','ok');
+            log(pastVerb+' @'+u.name+' ('+done+'/'+users.length+')','ok');
             var el=document.querySelector('[data-uid="'+u.id+'"]');if(el)el.remove();
-            S.nf=S.nf.filter(function(x){return x.id!==u.id;});S.sel.delete(u.id);
-            var nc=$('iu-s-nf');if(nc)nc.textContent=S.nf.length;
+            if(isFollow){S.fans=S.fans.filter(function(x){return x.id!==u.id;});}
+            else{S.nf=S.nf.filter(function(x){return x.id!==u.id;});}
+            S.sel.delete(u.id);
+            var nc=isFollow?$('iu-s-fans'):$('iu-s-nf');if(nc)nc.textContent=activeList().length;
+            var tn=isFollow?$('iu-tab-fans-n'):$('iu-tab-nf-n');if(tn)tn.textContent=activeList().length;
+            updCount();
           }catch(err){
             failed++;
-            log('Failed @'+u.name+': '+err.message,'err');
+            log('Failed to '+failVerb+' @'+u.name+': '+err.message,'err');
           }
 
           var pct=Math.round((done+failed)/users.length*100);
@@ -448,20 +571,21 @@ Everything runs in YOUR browser. No external servers involved.</div>
           actionCount++;
           if(actionCount>=pauseEvery&&i<users.length-1){
             var p;
-            if(S.fast){p=rnd(120000,240000);if(done>50)p=rnd(180000,300000);if(done>100)p=rnd(300000,480000);}
-            else{p=rnd(180000,360000);if(done>50)p=rnd(300000,480000);if(done>100)p=rnd(480000,900000);}
+            if(S.fast){p=rnd(60000,120000);if(done>50)p=rnd(120000,180000);if(done>100)p=rnd(180000,300000);}
+            else{p=rnd(120000,240000);if(done>50)p=rnd(180000,300000);if(done>100)p=rnd(300000,480000);}
             log('Safety pause: '+(p/60000).toFixed(1)+' min ('+done+' done so far)','warn');
             $('iu-uf-label').textContent=(done+failed)+'/'+users.length+' \\u00b7 Pause '+(p/60000).toFixed(1)+'m';
             await wait(p,p+1000);
-            actionCount=0;pauseEvery=S.fast?rnd(18,25):rnd(12,18);
+            actionCount=0;pauseEvery=S.fast?rnd(20,30):rnd(15,20);
           }else{
-            await wait(S.fast?8000:20000,S.fast?15000:35000);
+            await wait(S.fast?5000:15000,S.fast?10000:25000);
           }
         }
         $('iu-mode-safe').style.pointerEvents='';$('iu-mode-fast').style.pointerEvents='';
+        $('iu-tab-nf').style.pointerEvents='';$('iu-tab-fans').style.pointerEvents='';
 
-        log('Done! '+done+' unfollowed'+(failed?', '+failed+' failed':'')+'.','ok');
-        $('iu-unfollow').textContent='Complete';
+        log('Done! '+done+' '+(isFollow?'followed back':'unfollowed')+(failed?', '+failed+' failed':'')+'.','ok');
+        $('iu-action-btn').textContent='Complete';
         $('iu-pause').style.display='none';
         S.unfollowing=false;
       }
@@ -469,19 +593,21 @@ Everything runs in YOUR browser. No external servers involved.</div>
       /* ─── Events ─── */
       $('iu-close').onclick=function(){P.style.display='none';};
       $('iu-scan').onclick=scan;
-      $('iu-unfollow').onclick=doUnfollow;
+      $('iu-action-btn').onclick=doAction;
+      $('iu-tab-nf').onclick=function(){switchTab('nf');};
+      $('iu-tab-fans').onclick=function(){switchTab('fans');};
       $('iu-mode-safe').onclick=function(){
         S.fast=false;
         $('iu-mode-safe').style.background='#0095F6';$('iu-mode-safe').style.color='#fff';
         $('iu-mode-fast').style.background='transparent';$('iu-mode-fast').style.color='#666';
-        $('iu-mode-desc').textContent='20\\u201335s between actions, ~15 per batch. Safest option.';
+        $('iu-mode-desc').textContent='15\\u201325s between actions, ~18 per batch. Safest option.';
         log('Switched to Safe mode','info');
       };
       $('iu-mode-fast').onclick=function(){
         S.fast=true;
         $('iu-mode-fast').style.background='#F77737';$('iu-mode-fast').style.color='#fff';
         $('iu-mode-safe').style.background='transparent';$('iu-mode-safe').style.color='#666';
-        $('iu-mode-desc').textContent='8\\u201315s between actions, ~22 per batch. Still safe, ~2x faster.';
+        $('iu-mode-desc').textContent='5\\u201310s between actions, ~25 per batch. Still safe, ~2.5x faster.';
         log('Switched to Fast mode','info');
       };
       $('iu-pause').onclick=function(){
