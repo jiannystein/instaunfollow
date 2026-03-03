@@ -185,7 +185,7 @@ Everything runs in YOUR browser. No external servers involved.</div>
       }
 
       /* ─── State ─── */
-      var S={user:null,fg:[],fr:[],nf:[],sel:new Set(),scanning:false,unfollowing:false,paused:false};var MC={};
+      var S={user:null,fg:[],fr:[],nf:[],sel:new Set(),scanning:false,unfollowing:false,paused:false,fast:false};var MC={};
 
       /* ─── Helpers ─── */
       function csrf(){return(document.cookie.match(/csrftoken=([^;]+)/)||[])[1]||'';}
@@ -272,6 +272,11 @@ Everything runs in YOUR browser. No external servers involved.</div>
           '<div id="iu-list" style="max-height:280px;overflow-y:auto;border:1px solid #2a2a5a;border-radius:8px;background:#0d1b36;"></div>'+
         '</div>'+
         '<div id="iu-unfollow-section" style="display:none;margin-top:14px;">'+
+          '<div style="display:flex;gap:4px;margin-bottom:10px;background:#0d1b36;border-radius:8px;padding:3px;position:relative;">'+
+            '<button id="iu-mode-safe" style="flex:1;padding:7px 0;border:none;border-radius:6px;background:#0095F6;color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.2s;">Safe</button>'+
+            '<button id="iu-mode-fast" style="flex:1;padding:7px 0;border:none;border-radius:6px;background:transparent;color:#666;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.2s;">Fast</button>'+
+          '</div>'+
+          '<div id="iu-mode-desc" style="font-size:11px;color:#888;margin-bottom:10px;line-height:1.4;">20\\u201335s between actions, ~15 per batch. Safest option.</div>'+
           '<button id="iu-unfollow" style="width:100%;padding:10px;background:#ED4956;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" disabled>Unfollow 0 Users</button>'+
           '<button id="iu-pause" style="display:none;width:100%;margin-top:6px;padding:8px;background:transparent;border:1px solid #2a2a5a;border-radius:8px;color:#FFB74D;font-size:12px;cursor:pointer;font-family:inherit;">Pause</button>'+
           '<div id="iu-uf-progress" style="display:none;margin-top:10px;">'+
@@ -401,18 +406,21 @@ Everything runs in YOUR browser. No external servers involved.</div>
       async function doUnfollow(){
         var users=S.nf.filter(function(u){return S.sel.has(u.id);});
         if(users.length===0)return;
-        var est=Math.ceil(users.length*50/60);
+        var spd=S.fast?25:50;
+        var est=Math.ceil(users.length*spd/60);
         var etaStr=est>=60?Math.floor(est/60)+'h '+est%60+'m':est+'m';
-        if(!confirm('Unfollow '+users.length+' users?\\n\\nEstimated time: ~'+etaStr+'\\n(Uses safe randomized delays to protect your account)'))return;
+        var modeLabel=S.fast?'Fast':'Safe';
+        if(!confirm('Unfollow '+users.length+' users? ('+modeLabel+' mode)\\n\\nEstimated time: ~'+etaStr+'\\n(Uses randomized delays to protect your account)'))return;
 
         S.unfollowing=true;
         $('iu-unfollow').disabled=true;
         $('iu-unfollow').textContent='Unfollowing...';
         $('iu-pause').style.display='block';
         $('iu-uf-progress').style.display='block';
+        $('iu-mode-safe').style.pointerEvents='none';$('iu-mode-fast').style.pointerEvents='none';
 
         var done=0,failed=0;
-        var pauseEvery=rnd(12,18);
+        var pauseEvery=S.fast?rnd(18,25):rnd(12,18);
         var actionCount=0;
         var t0=Date.now();
 
@@ -439,17 +447,18 @@ Everything runs in YOUR browser. No external servers involved.</div>
 
           actionCount++;
           if(actionCount>=pauseEvery&&i<users.length-1){
-            var p=rnd(180000,360000);
-            if(done>50)p=rnd(300000,480000);
-            if(done>100)p=rnd(480000,900000);
+            var p;
+            if(S.fast){p=rnd(120000,240000);if(done>50)p=rnd(180000,300000);if(done>100)p=rnd(300000,480000);}
+            else{p=rnd(180000,360000);if(done>50)p=rnd(300000,480000);if(done>100)p=rnd(480000,900000);}
             log('Safety pause: '+(p/60000).toFixed(1)+' min ('+done+' done so far)','warn');
             $('iu-uf-label').textContent=(done+failed)+'/'+users.length+' \\u00b7 Pause '+(p/60000).toFixed(1)+'m';
             await wait(p,p+1000);
-            actionCount=0;pauseEvery=rnd(12,18);
+            actionCount=0;pauseEvery=S.fast?rnd(18,25):rnd(12,18);
           }else{
-            await wait(20000,35000);
+            await wait(S.fast?8000:20000,S.fast?15000:35000);
           }
         }
+        $('iu-mode-safe').style.pointerEvents='';$('iu-mode-fast').style.pointerEvents='';
 
         log('Done! '+done+' unfollowed'+(failed?', '+failed+' failed':'')+'.','ok');
         $('iu-unfollow').textContent='Complete';
@@ -461,6 +470,20 @@ Everything runs in YOUR browser. No external servers involved.</div>
       $('iu-close').onclick=function(){P.style.display='none';};
       $('iu-scan').onclick=scan;
       $('iu-unfollow').onclick=doUnfollow;
+      $('iu-mode-safe').onclick=function(){
+        S.fast=false;
+        $('iu-mode-safe').style.background='#0095F6';$('iu-mode-safe').style.color='#fff';
+        $('iu-mode-fast').style.background='transparent';$('iu-mode-fast').style.color='#666';
+        $('iu-mode-desc').textContent='20\\u201335s between actions, ~15 per batch. Safest option.';
+        log('Switched to Safe mode','info');
+      };
+      $('iu-mode-fast').onclick=function(){
+        S.fast=true;
+        $('iu-mode-fast').style.background='#F77737';$('iu-mode-fast').style.color='#fff';
+        $('iu-mode-safe').style.background='transparent';$('iu-mode-safe').style.color='#666';
+        $('iu-mode-desc').textContent='8\\u201315s between actions, ~22 per batch. Still safe, ~2x faster.';
+        log('Switched to Fast mode','info');
+      };
       $('iu-pause').onclick=function(){
         S.paused=!S.paused;
         $('iu-pause').textContent=S.paused?'Resume':'Pause';
